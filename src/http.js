@@ -11,8 +11,8 @@ const BASE = 'https://api.binance.com'
 const makeQueryString = q =>
   q
     ? `?${Object.keys(q)
-        .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(q[k])}`)
-        .join('&')}`
+      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(q[k])}`)
+      .join('&')}`
     : ''
 
 /**
@@ -60,8 +60,8 @@ const publicCall = (path, data, method = 'GET', headers = {}) =>
     fetch(`${BASE}/api${path}${makeQueryString(data)}`, {
       method,
       json: true,
-      headers,
-    }),
+      headers
+    })
   )
 
 /**
@@ -78,7 +78,7 @@ const keyCall = ({ apiKey }) => (path, data, method = 'GET') => {
   }
 
   return publicCall(path, data, method, {
-    'X-MBX-APIKEY': apiKey,
+    'X-MBX-APIKEY': apiKey
   })
 }
 
@@ -96,10 +96,12 @@ const privateCall = ({ apiKey, apiSecret }) => (
   data = {},
   method = 'GET',
   noData,
-  noExtra,
+  noExtra
 ) => {
   if (!apiKey || !apiSecret) {
-    throw new Error('You need to pass an API key and secret to make authenticated calls.')
+    throw new Error(
+      'You need to pass an API key and secret to make authenticated calls.'
+    )
   }
 
   return (data && data.useServerTime
@@ -119,15 +121,15 @@ const privateCall = ({ apiKey, apiSecret }) => (
 
     return sendResult(
       fetch(
-        `${BASE}${path.includes('/wapi') ? '' : '/api'}${path}${noData
-          ? ''
-          : makeQueryString(newData)}`,
+        `${BASE}${path.includes('/wapi') ? '' : '/api'}${path}${
+          noData ? '' : makeQueryString(newData)
+        }`,
         {
           method,
           headers: { 'X-MBX-APIKEY': apiKey },
-          json: true,
-        },
-      ),
+          json: true
+        }
+      )
     )
   })
 }
@@ -143,7 +145,7 @@ export const candleFields = [
   'quoteVolume',
   'trades',
   'baseAssetVolume',
-  'quoteAssetVolume',
+  'quoteAssetVolume'
 ]
 
 /**
@@ -153,7 +155,7 @@ export const candleFields = [
 const candles = payload =>
   checkParams('candles', payload, ['symbol']) &&
   publicCall('/v1/klines', { interval: '5m', ...payload }).then(candles =>
-    candles.map(candle => zip(candleFields, candle)),
+    candles.map(candle => zip(candleFields, candle))
   )
 
 /**
@@ -161,7 +163,8 @@ const candles = payload =>
  */
 const order = (pCall, payload = {}, url) => {
   const newPayload =
-    ['LIMIT', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'].includes(payload.type) || !payload.type
+    ['LIMIT', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT_LIMIT'].includes(payload.type) ||
+    !payload.type
       ? { timeInForce: 'GTC', ...payload }
       : payload
 
@@ -179,7 +182,7 @@ const book = payload =>
   publicCall('/v1/depth', payload).then(({ lastUpdateId, asks, bids }) => ({
     lastUpdateId,
     asks: asks.map(a => zip(['price', 'quantity'], a)),
-    bids: bids.map(b => zip(['price', 'quantity'], b)),
+    bids: bids.map(b => zip(['price', 'quantity'], b))
   }))
 
 const aggTrades = payload =>
@@ -193,8 +196,8 @@ const aggTrades = payload =>
       lastId: trade.l,
       timestamp: trade.T,
       isBuyerMaker: trade.m,
-      wasBestPrice: trade.M,
-    })),
+      wasBestPrice: trade.M
+    }))
   )
 
 export default opts => {
@@ -211,18 +214,20 @@ export default opts => {
     candles,
 
     trades: payload =>
-      checkParams('trades', payload, ['symbol']) && publicCall('/v1/trades', payload),
+      checkParams('trades', payload, ['symbol']) &&
+      publicCall('/v1/trades', payload),
     tradesHistory: payload =>
-      checkParams('tradesHitory', payload, ['symbol']) && kCall('/v1/historicalTrades', payload),
+      checkParams('tradesHitory', payload, ['symbol']) &&
+      kCall('/v1/historicalTrades', payload),
 
     dailyStats: payload => publicCall('/v1/ticker/24hr', payload),
     prices: () =>
       publicCall('/v1/ticker/allPrices').then(r =>
-        r.reduce((out, cur) => ((out[cur.symbol] = cur.price), out), {}),
+        r.reduce((out, cur) => ((out[cur.symbol] = cur.price), out), {})
       ),
     allBookTickers: () =>
       publicCall('/v1/ticker/allBookTickers').then(r =>
-        r.reduce((out, cur) => ((out[cur.symbol] = cur), out), {}),
+        r.reduce((out, cur) => ((out[cur.symbol] = cur), out), {})
       ),
 
     order: payload => order(pCall, payload, '/v3/order'),
@@ -242,7 +247,9 @@ export default opts => {
     depositAddress: payload => pCall('/wapi/v3/depositAddress.html', payload),
 
     getDataStream: () => pCall('/v1/userDataStream', null, 'POST', true),
-    keepDataStream: payload => pCall('/v1/userDataStream', payload, 'PUT', false, true),
-    closeDataStream: payload => pCall('/v1/userDataStream', payload, 'DELETE', false, true),
+    keepDataStream: payload =>
+      pCall('/v1/userDataStream', payload, 'PUT', false, true),
+    closeDataStream: payload =>
+      pCall('/v1/userDataStream', payload, 'DELETE', false, true)
   }
 }
